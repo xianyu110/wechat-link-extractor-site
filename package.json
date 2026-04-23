@@ -1,0 +1,26 @@
+{
+  "name": "wechat-link-extractor-site",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "Extract WeChat mp.weixin.qq.com article content, images, and videos into JSON/Markdown, with downloadable media and a GitHub Pages viewer.",
+  "bin": {
+    "extract-wechat": "./scripts/extract-wechat.js"
+  },
+  "scripts": {
+    "extract": "node ./scripts/extract-wechat.js",
+    "check": "node --check ./scripts/extract-wechat.js && node --check ./docs/app.js",
+    "serve": "python3 -m http.server 4173 -d docs"
+  },
+  "keywords": [
+    "wechat",
+    "weixin",
+    "mp.weixin.qq.com",
+    "extractor",
+    "github-pages"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.55.1"
+  }
+}
