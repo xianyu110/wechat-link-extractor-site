@@ -256,6 +256,33 @@ const readErrorMessage = async (response) => {
   return (await response.text()) || `请求失败：HTTP ${response.status}`;
 };
 
+const isApiConnectivityError = (error) => {
+  const haystack = [
+    error?.message,
+    error?.cause?.message,
+    error?.stack,
+    String(error || ''),
+  ]
+    .filter(Boolean)
+    .join('\n')
+    .toLowerCase();
+
+  return (
+    haystack.includes('failed to fetch') ||
+    haystack.includes('networkerror') ||
+    haystack.includes('load failed') ||
+    haystack.includes('econnreset') ||
+    haystack.includes('err_connection_reset')
+  );
+};
+
+const toApiRequestError = (error) => {
+  if (isApiConnectivityError(error)) {
+    return new Error(`当前网络无法访问 API 域名：${apiBase}`);
+  }
+  return error instanceof Error ? error : new Error(String(error));
+};
+
 const loadSample = async () => {
   setStatus('正在加载示例数据...');
   const data = await fetchJson(defaultDataUrl);
@@ -288,22 +315,26 @@ const extractOnline = async (inputUrl) => {
   const sourceUrl = normalizeUrl(inputUrl);
   if (!sourceUrl) throw new Error('请先输入公众号链接。');
   if (!apiBase) throw new Error('当前页面还没有配置在线 API。');
-  setStatus('正在在线提取公众号文章，这一步可能需要十几秒...');
-  const payload = await fetchJson(`${apiBase}/api/extract`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ url: sourceUrl }),
-  });
-  if (!payload.ok || !payload.data) {
-    throw new Error(payload.error || '在线提取失败。');
+  try {
+    setStatus('正在在线提取公众号文章，这一步可能需要十几秒...');
+    const payload = await fetchJson(`${apiBase}/api/extract`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url: sourceUrl }),
+    });
+    if (!payload.ok || !payload.data) {
+      throw new Error(payload.error || '在线提取失败。');
+    }
+    state.extractedUrl = sourceUrl;
+    renderData(payload.data);
+    setStatus('在线提取成功，结果已经展示在当前页面。', 'success');
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete('data');
+    nextUrl.searchParams.set('url', sourceUrl);
+    window.history.replaceState({}, '', nextUrl);
+  } catch (error) {
+    throw toApiRequestError(error);
   }
-  state.extractedUrl = sourceUrl;
-  renderData(payload.data);
-  setStatus('在线提取成功，结果已经展示在当前页面。', 'success');
-  const nextUrl = new URL(window.location.href);
-  nextUrl.searchParams.delete('data');
-  nextUrl.searchParams.set('url', sourceUrl);
-  window.history.replaceState({}, '', nextUrl);
 };
 
 const downloadBundle = async ({ includeImages, includeVideos, label }) => {
@@ -324,26 +355,30 @@ const downloadBundle = async ({ includeImages, includeVideos, label }) => {
     throw new Error('当前文章没有可下载的图片或视频。');
   }
 
-  setStatus(`正在打包${label}，媒体较多时可能需要几十秒，请稍等...`);
-  const response = await fetch(`${apiBase}/api/bundle`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      article: state.data,
-      includeImages,
-      includeVideos,
-    }),
-  });
+  try {
+    setStatus(`正在打包${label}，媒体较多时可能需要几十秒，请稍等...`);
+    const response = await fetch(`${apiBase}/api/bundle`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        article: state.data,
+        includeImages,
+        includeVideos,
+      }),
+    });
 
-  if (!response.ok) {
-    throw new Error(await readErrorMessage(response));
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response));
+    }
+
+    const filename =
+      getFilenameFromDisposition(response.headers.get('content-disposition') || '') ||
+      `wechat-assets-${Date.now()}.zip`;
+    downloadBlob(await response.blob(), filename);
+    setStatus(`${label}打包完成，zip 已开始下载。`, 'success');
+  } catch (error) {
+    throw toApiRequestError(error);
   }
-
-  const filename =
-    getFilenameFromDisposition(response.headers.get('content-disposition') || '') ||
-    `wechat-assets-${Date.now()}.zip`;
-  downloadBlob(await response.blob(), filename);
-  setStatus(`${label}打包完成，zip 已开始下载。`, 'success');
 };
 
 const resetToSample = async () => {
