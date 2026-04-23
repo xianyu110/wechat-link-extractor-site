@@ -2,6 +2,9 @@
   "functions": {
     "api/extract.js": {
       "maxDuration": 300
+    },
+    "api/bundle.js": {
+      "maxDuration": 300
     }
   }
 }

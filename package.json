@@ -9,7 +9,7 @@
   },
   "scripts": {
     "extract": "node ./scripts/extract-wechat.js",
-    "check": "node --check ./lib/extract-core.js && node --check ./scripts/extract-wechat.js && node --check ./api/extract.js && node --check ./docs/app.js",
+    "check": "node --check ./lib/extract-core.js && node --check ./scripts/extract-wechat.js && node --check ./api/extract.js && node --check ./api/bundle.js && node --check ./docs/app.js",
     "serve": "python3 -m http.server 4173 -d docs",
     "dev:api": "npx vercel dev --listen 4311"
   },
@@ -24,6 +24,7 @@
   "dependencies": {
     "playwright": "^1.55.1",
     "@sparticuz/chromium": "^138.0.2",
+    "jszip": "^3.10.1",
     "playwright-core": "^1.55.1"
   }
 }

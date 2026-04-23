@@ -75,6 +75,24 @@ const normalizeUrl = (value = '') => {
   }
 };
 
+const downloadBlob = (blob, filename) => {
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+};
+
+const getFilenameFromDisposition = (value = '') => {
+  const utf8Match = value.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+  if (utf8Match) return decodeURIComponent(utf8Match[1]);
+  const plainMatch = value.match(/filename\s*=\s*"([^"]+)"/i) || value.match(/filename\s*=\s*([^;]+)/i);
+  return plainMatch ? plainMatch[1].trim() : '';
+};
+
 const getApiBase = () => {
   const queryApi = getSearch().get('api');
   if (queryApi) return normalizeUrl(queryApi).replace(/\/$/, '');
@@ -229,6 +247,15 @@ const fetchJson = async (url, options) => {
   return response.json();
 };
 
+const readErrorMessage = async (response) => {
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    const payload = await response.json();
+    return payload.error || `请求失败：HTTP ${response.status}`;
+  }
+  return (await response.text()) || `请求失败：HTTP ${response.status}`;
+};
+
 const loadSample = async () => {
   setStatus('正在加载示例数据...');
   const data = await fetchJson(defaultDataUrl);
@@ -277,6 +304,46 @@ const extractOnline = async (inputUrl) => {
   nextUrl.searchParams.delete('data');
   nextUrl.searchParams.set('url', sourceUrl);
   window.history.replaceState({}, '', nextUrl);
+};
+
+const downloadBundle = async ({ includeImages, includeVideos, label }) => {
+  if (!state.data) throw new Error('请先加载一篇文章，再执行打包下载。');
+  if (!apiBase) throw new Error('当前页面还没有配置在线 API，无法打包下载媒体。');
+  if (includeImages && !(state.data.images || []).length && !includeVideos) {
+    throw new Error('当前文章没有可下载的图片。');
+  }
+  if (includeVideos && !(state.data.videos || []).length && !includeImages) {
+    throw new Error('当前文章没有可下载的视频。');
+  }
+  if (
+    includeImages &&
+    includeVideos &&
+    !(state.data.images || []).length &&
+    !(state.data.videos || []).length
+  ) {
+    throw new Error('当前文章没有可下载的图片或视频。');
+  }
+
+  setStatus(`正在打包${label}，媒体较多时可能需要几十秒，请稍等...`);
+  const response = await fetch(`${apiBase}/api/bundle`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      article: state.data,
+      includeImages,
+      includeVideos,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+
+  const filename =
+    getFilenameFromDisposition(response.headers.get('content-disposition') || '') ||
+    `wechat-assets-${Date.now()}.zip`;
+  downloadBlob(await response.blob(), filename);
+  setStatus(`${label}打包完成，zip 已开始下载。`, 'success');
 };
 
 const resetToSample = async () => {
@@ -342,6 +409,27 @@ const bindEvents = () => {
   $('#share-button').addEventListener('click', async () => {
     try {
       await copyShareLink();
+    } catch (error) {
+      setStatus(error.message || String(error), 'error');
+    }
+  });
+  $('#download-images-button').addEventListener('click', async () => {
+    try {
+      await downloadBundle({ includeImages: true, includeVideos: false, label: '图片' });
+    } catch (error) {
+      setStatus(error.message || String(error), 'error');
+    }
+  });
+  $('#download-videos-button').addEventListener('click', async () => {
+    try {
+      await downloadBundle({ includeImages: false, includeVideos: true, label: '视频' });
+    } catch (error) {
+      setStatus(error.message || String(error), 'error');
+    }
+  });
+  $('#download-all-button').addEventListener('click', async () => {
+    try {
+      await downloadBundle({ includeImages: true, includeVideos: true, label: '图片和视频' });
     } catch (error) {
       setStatus(error.message || String(error), 'error');
     }
