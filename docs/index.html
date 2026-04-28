@@ -297,16 +297,16 @@
     <main class="shell">
       <section class="hero">
         <span class="eyebrow">WeChat Link Extractor</span>
-        <h1>公众号文章提取在线工具</h1>
+        <h1>公众号与短视频链接提取工具</h1>
         <p class="lede">
-          这个页面现在支持真正的“输入公众号链接 -> 自动提取”。
+          这个页面现在支持“输入公众号链接/短视频分享链接 -> 自动提取”。
           实现方式是 <code>GitHub Pages</code> 前端 + 一个在线 API 后端；
           页面仍然可以继续加载示例数据、上传本地 <code>article.json</code>、或者读取远程 JSON。
         </p>
         <div class="hero-grid">
           <section class="panel">
             <h2>四种使用方式</h2>
-            <p>默认示例、在线提取、上传 JSON、远程 JSON。你可以把这个页面当作在线查看器，也可以直接当成提取入口。</p>
+            <p>默认示例、在线提取、上传 JSON、远程 JSON。在线提取支持直接粘贴微信、抖音、B 站、小红书等分享文本。</p>
             <div class="chip-row" id="mode-switch">
               <button class="chip active" data-mode="extract" type="button">在线提取</button>
               <button class="chip" data-mode="sample" type="button">示例数据</button>
@@ -317,8 +317,8 @@
           <section class="panel">
             <h2>在线提取说明</h2>
             <p>
-              在线提取会把你输入的 <code>mp.weixin.qq.com</code> 链接发送到后端，
-              后端使用真实浏览器抓取正文、图片和视频，再把结构化结果返回给这个页面展示。
+              在线提取会把你输入的链接或分享口令发送到后端，
+              后端先自动识别真实 URL，再使用真实浏览器抓取正文、图片、封面和视频候选链接。
             </p>
           </section>
         </div>
@@ -330,8 +330,8 @@
             <div>
               <h2>数据入口</h2>
               <div class="form-row" id="extract-block">
-                <label class="label" for="extract-input">公众号文章链接</label>
-                <input class="input" id="extract-input" type="url" placeholder="https://mp.weixin.qq.com/s/..." />
+                <label class="label" for="extract-input">文章/短视频链接或完整分享口令</label>
+                <input class="input" id="extract-input" type="text" placeholder="粘贴 mp.weixin.qq.com、v.douyin.com、b23.tv、小红书分享链接..." />
               </div>
               <div class="form-row" id="upload-block" hidden>
                 <label class="label" for="file-input">上传本地 article.json</label>
@@ -356,7 +356,7 @@
             <div>
               <h2>怎么使用</h2>
               <p>
-                1. 直接粘一个公众号链接并点击加载。<br />
+                1. 直接粘一个公众号链接、短视频链接或完整分享口令并点击加载。<br />
                 2. 或者上传你本地提取好的 <code>article.json</code>。<br />
                 3. 或者传一个公网 JSON 地址，把这个页当成查看器。<br />
                 4. 提取完成后，可以一键把图片、视频或全部媒体打成 zip 下载。<br />

@@ -15,13 +15,14 @@ function setCors(res) {
 
 async function readUrlFromRequest(req) {
   if (req.method === 'GET') {
-    return req.query?.url || '';
+    return req.query?.url || req.query?.input || req.query?.text || '';
   }
   if (req.method === 'POST') {
     if (typeof req.body === 'string') {
-      return JSON.parse(req.body || '{}')?.url || '';
+      const body = JSON.parse(req.body || '{}');
+      return body.url || body.input || body.text || '';
     }
-    return req.body?.url || '';
+    return req.body?.url || req.body?.input || req.body?.text || '';
   }
   return '';
 }
@@ -54,7 +55,7 @@ export default async function handler(req, res) {
   try {
     const url = await readUrlFromRequest(req);
     if (!url) {
-      res.status(400).end(JSON.stringify({ ok: false, error: 'Missing url parameter.' }));
+      res.status(400).end(JSON.stringify({ ok: false, error: 'Missing url/input parameter.' }));
       return;
     }
 

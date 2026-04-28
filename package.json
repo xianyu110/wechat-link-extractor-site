@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": false,
   "type": "module",
-  "description": "Extract WeChat mp.weixin.qq.com article content, images, and videos into JSON/Markdown, with downloadable media and a GitHub Pages viewer.",
+  "description": "Extract WeChat articles and social video links from Douyin, Bilibili, Xiaohongshu, and more into JSON/Markdown with downloadable media.",
   "bin": {
     "extract-wechat": "./scripts/extract-wechat.js"
   },
@@ -17,6 +17,10 @@
     "wechat",
     "weixin",
     "mp.weixin.qq.com",
+    "douyin",
+    "bilibili",
+    "xiaohongshu",
+    "video",
     "extractor",
     "github-pages"
   ],

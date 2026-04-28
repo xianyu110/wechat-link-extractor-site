@@ -44,10 +44,10 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log(`extract-wechat <url> [options]
+  console.log(`extract-wechat <url-or-share-text> [options]
 
 Options:
-  --url <url>               WeChat article URL
+  --url <input>             Article/video URL or copied share text
   --out-dir <dir>           Output directory
   --format <list>           Output formats: json,md
   --download-images         Download extracted images
@@ -93,6 +93,7 @@ async function main() {
     JSON.stringify(
       {
         title: persisted.data.title,
+        platform: persisted.data.platform_name || persisted.data.platform || '',
         account_name: persisted.data.account_name,
         image_count: persisted.data.images.length,
         video_count: persisted.data.videos.length,

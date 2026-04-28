@@ -25,7 +25,8 @@ const buildMarkdown = (data) => {
   const lines = [
     `# ${data.title || '未命名文章'}`,
     '',
-    `- 公众号：${data.account_name || ''}`,
+    `- 平台：${data.platform_name || (data.platform === 'wechat' ? '微信公众号' : '')}`,
+    `- 账号：${data.account_name || ''}`,
     `- 作者：${data.author || ''}`,
     `- 发布时间：${data.publish_time || ''}`,
     `- 原文链接：${data.url || ''}`,
@@ -148,11 +149,14 @@ const setMode = (mode) => {
 };
 
 const renderMeta = (data) => {
+  const platformName = data.platform_name || (data.platform === 'wechat' ? '微信公众号' : '');
+  const accountLabel = data.platform === 'wechat' || platformName === '微信公众号' ? '公众号' : '账号';
   const meta = [
-    `公众号：${data.account_name || '未知'}`,
+    platformName ? `平台：${platformName}` : '',
+    `${accountLabel}：${data.account_name || '未知'}`,
     `作者：${data.author || '未知'}`,
     `发布时间：${data.publish_time || '未知'}`,
-  ];
+  ].filter(Boolean);
   $('#article-meta').innerHTML = meta.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
 };
 
@@ -185,7 +189,11 @@ const renderVideos = (data) => {
       (video, index) => `
         <div class="video-card">
           <p><strong>视频 ${index + 1}</strong></p>
-          <p>${video.poster ? `封面：<a href="${escapeHtml(video.poster)}" target="_blank" rel="noreferrer">打开封面</a><br />` : ''}<a href="${escapeHtml(video.url)}" target="_blank" rel="noreferrer">打开视频链接</a></p>
+          <p>
+            ${video.poster ? `封面：<a href="${escapeHtml(video.poster)}" target="_blank" rel="noreferrer">打开封面</a><br />` : ''}
+            ${video.source ? `来源：${escapeHtml(video.source)}<br />` : ''}
+            <a href="${escapeHtml(video.url)}" target="_blank" rel="noreferrer">打开视频链接</a>
+          </p>
         </div>
       `,
     )
@@ -312,25 +320,25 @@ const loadUpload = async (file) => {
 };
 
 const extractOnline = async (inputUrl) => {
-  const sourceUrl = normalizeUrl(inputUrl);
-  if (!sourceUrl) throw new Error('请先输入公众号链接。');
+  const sourceInput = String(inputUrl || '').trim();
+  if (!sourceInput) throw new Error('请先输入公众号/短视频链接或分享口令。');
   if (!apiBase) throw new Error('当前页面还没有配置在线 API。');
   try {
-    setStatus('正在在线提取公众号文章，这一步可能需要十几秒...');
+    setStatus('正在在线提取内容，公众号和短视频页面可能需要十几秒...');
     const payload = await fetchJson(`${apiBase}/api/extract`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ url: sourceUrl }),
+      body: JSON.stringify({ input: sourceInput }),
     });
     if (!payload.ok || !payload.data) {
       throw new Error(payload.error || '在线提取失败。');
     }
-    state.extractedUrl = sourceUrl;
+    state.extractedUrl = payload.data.source_url || sourceInput;
     renderData(payload.data);
     setStatus('在线提取成功，结果已经展示在当前页面。', 'success');
     const nextUrl = new URL(window.location.href);
     nextUrl.searchParams.delete('data');
-    nextUrl.searchParams.set('url', sourceUrl);
+    nextUrl.searchParams.set('url', state.extractedUrl);
     window.history.replaceState({}, '', nextUrl);
   } catch (error) {
     throw toApiRequestError(error);
@@ -488,7 +496,7 @@ const init = async () => {
       await loadRemote(remote);
     } else {
       setMode(apiBase ? 'extract' : 'sample');
-      if (apiBase) setStatus('已就绪。输入公众号链接后点击“加载当前模式数据”。');
+      if (apiBase) setStatus('已就绪。输入公众号链接、短视频链接或完整分享口令后点击“加载当前模式数据”。');
       else await loadSample();
     }
   } catch (error) {

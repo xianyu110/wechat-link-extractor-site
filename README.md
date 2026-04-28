@@ -1,6 +1,6 @@
 # WeChat Link Extractor Site
 
-提取微信公众号文章链接中的正文、图片和视频，导出成 `json` / `markdown`，并生成一个可直接发布到 GitHub Pages 的静态展示页。
+提取微信公众号文章链接中的正文、图片和视频；在线 API 也支持从抖音、B 站、小红书等分享链接里识别页面、封面和视频候选链接。结果可导出成 `json` / `markdown`，并生成一个可直接发布到 GitHub Pages 的静态展示页。
 
 ## 安装
 
@@ -12,6 +12,20 @@ npm install
 
 ```bash
 node ./scripts/extract-wechat.js "https://mp.weixin.qq.com/s/hfRsnvpWeMqPZQe6T7Xr6Q"
+```
+
+在线 API / 展示页输入框可以直接粘贴完整分享口令，例如：
+
+```text
+7.94 复制打开抖音，看看【J.的图文作品】五一见一面吧 你穿裙子 我带花 位置你定 不是宾馆... https://v.douyin.com/u7OcxidjHzQ/
+```
+
+也可以直接 POST 到 API：
+
+```bash
+curl -X POST http://127.0.0.1:4311/api/extract \
+  -H 'content-type: application/json' \
+  -d '{"input":"https://v.douyin.com/u7OcxidjHzQ/"}'
 ```
 
 同时下载图片和视频：

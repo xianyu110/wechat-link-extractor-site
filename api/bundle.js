@@ -76,7 +76,11 @@ function normalizeAssets(items, folder, fallbackExt) {
 }
 
 async function downloadAsset(item) {
-  const response = await fetch(item.source_url, { headers: DEFAULT_HEADERS });
+  const headers = {
+    ...DEFAULT_HEADERS,
+    ...(item.referer ? { referer: item.referer } : {}),
+  };
+  const response = await fetch(item.source_url, { headers });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
   }
